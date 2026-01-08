@@ -1,0 +1,27 @@
+# ---- Data (never commit raw data) ----
+data/
+*.tsv
+*.csv
+*.txt
+
+# ---- Genomics / methylation ----
+*.beta
+*.pat
+*.pat.gz
+*.bam
+*.bai
+*.csi
+
+# ---- Binary / large files ----
+*.bin
+*.h5
+*.hdf5
+*.npz
+
+# ---- Jupyter outputs ----
+.ipynb_checkpoints/
+
+# ---- Python environments ----
+.venv/
+__pycache__/
+*.pyc
