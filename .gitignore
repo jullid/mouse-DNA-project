@@ -3,6 +3,9 @@ data/
 *.tsv
 *.csv
 *.txt
+# Keep documentation
+!data/README.md 
+
 
 # ---- Genomics / methylation ----
 *.beta
