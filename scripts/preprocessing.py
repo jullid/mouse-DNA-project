@@ -1,6 +1,6 @@
 """
 Preprocessing script intended to be run once. It takes a CSV file, simplifies
-column names, and groups cell types. The output is a canonical processed CSV
+column names, and groups cell types. The output is a processed CSV
 used for all downstream modeling.
 """
 
@@ -101,12 +101,6 @@ df.columns = new_columns
 
 # call re-order function:
 df_reordered = reorder_columns_grouped(df)
-
-
-# #Count how many columns in each cell type group
-# cell_type_counts = df_reordered.columns[1:].str.split(".", n=1).str[0].value_counts()
-# print(cell_type_counts)
-
 
 print(df_reordered.head())
 
