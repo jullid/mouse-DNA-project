@@ -1,3 +1,9 @@
+"""
+Preprocessing script intended to be run once. It takes a CSV file, simplifies
+column names, and groups cell types. The output is a canonical processed CSV
+used for all downstream modeling.
+"""
+
 from pathlib import Path
 import pandas as pd
 import warnings
