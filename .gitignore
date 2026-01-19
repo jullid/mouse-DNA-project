@@ -28,3 +28,7 @@ data/
 .venv/
 __pycache__/
 *.pyc
+
+
+# ---- VS Code ----
+.vscode/
