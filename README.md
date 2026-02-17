@@ -6,6 +6,10 @@ This repository contains a research project at Lund University focused on mouse 
 
 Using region level DNA methylation data across a wide range of mouse tissues, the project identifies tissue specific unmethylated genomic regions by comparing target tissue methylation against background methylation across all other tissues. These regions form the basis of a reference atlas capturing tissue specific methylation patterns.
 
+## Heatmap of Top Regions
+
+![Heatmap of Top Regions](figures/heatmap_top_regions.png)
+
 ## Atlas Construction
 
 The initial stage of the project focuses on atlas construction. DNA methylation data are organized at the genomic region level and aggregated across biological replicates to obtain one methylation profile per tissue. For each tissue, uniquely unmethylated regions are identified by ranking regions based on the difference between background methylation across all other tissues and methylation in the target tissue.
