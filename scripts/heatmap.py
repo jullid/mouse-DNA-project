@@ -6,6 +6,7 @@ import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
+import warnings
 import sys
 from IPython.display import display, HTML
 from scipy.cluster.hierarchy import linkage, dendrogram
@@ -21,6 +22,28 @@ print(sys.executable)
 print(csv_file.exists())
 
 df = pd.read_csv(csv_file)
+
+# -------------------------------- Filter df on NaN in the annotation csv file (originally from excel MM285) ----------------------------------------------
+#Import Excel annotation file with metadata, identical probe_IDs as dataset -> we can filter on this and also map extracted regions back to the excel file.
+annot_file = DATA_DIR / "original" / "12_02_2026_MM285.csv"
+df_annot = pd.read_csv(annot_file, low_memory=False)
+
+# drop any nan values from df_annot. We do not want to extract regions that contain no genomic information in the annotation file.
+df_annot = df_annot.dropna(subset=["CpG_chrm"]).copy()
+
+# make sure probe_id columns are strings
+df["probe_ID"] = df["probe_ID"].astype(str)
+df_annot["Probe_ID"] = df_annot["Probe_ID"].astype(str)
+
+# create set of valid ids, for efficiency
+valid_ids = set(df_annot["Probe_ID"])
+
+# create mask based on valid_ids, and filter df using this mask + make it as independent dataframe by using copy (instead of accidentally creating a .view)
+df = df[df["probe_ID"].isin(valid_ids)].copy() # Removing 7,415 rows, 296,070 rows -> 288,655 rows
+
+print("Shape of df after NaN row filtering", df.shape)
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 # with pd.option_context("display.max_columns", None,
 #                        "display.width", None):
@@ -95,7 +118,7 @@ This is done by filtering celltype_df and then merging celltypes. Expected: (525
 """
 
 # Drop columns that we don't need
-df_filtered_tissues = df_celltype.drop(columns=['Sciatic_Nerve', 'Optic_Nerve'])
+df_filtered_tissues = df_celltype.drop(columns=['Sciatic_Nerve', 'Optic_Nerve', 'Mammary_Glands'])
 
 # Define "merge groups", the KEYS are the new merged tissue names.
 merge_groups = {
@@ -310,22 +333,29 @@ def stats_top_regions(df_top_regions):
     return summary_stats
 
 
-def create_heatmap_matrix(df, df_top_regions, probe_col="probe_ID", region_mode="all", verbose=False):
-    
+def create_heatmap_matrix(df, df_top_regions, probe_col="probe_ID", region_mode="all", max_per_tissue=None, verbose=False):
     """
     Create a heatmap-ready matrix (tissues x regions).
-
-    region_mode:
+    Parameters:
+    -----------
+    region_mode : str
         - "all": use all regions (including duplicates)
         - "unique": keep only regions selected exactly once
+    max_per_tissue : int, optional
+        Maximum number of regions to keep per tissue. Only works with region_mode="unique".
+        Regions are kept in their original ranking order from df_top_regions.
+    verbose : bool
+        If True, print detailed information about region selection
     """
-
     if region_mode not in {"all", "unique"}:
         raise ValueError("region_mode must be 'all' or 'unique'")
-
+    
+    if max_per_tissue is not None and region_mode != "unique":
+        raise ValueError("max_per_tissue can only be used with region_mode='unique'. To resolve, set max_per_tissue=None.\n"
+                        "Note: Using region_mode='all' will always return the same amount of regions as defined in top_N since there is no uniqueness constraint filtering.")
+    
     if region_mode == "all":
         region_order = df_top_regions[probe_col].tolist()
-
     else:  # unique
         probe_counts = df_top_regions[probe_col].value_counts()
         unique_probes = probe_counts[probe_counts == 1].index
@@ -334,7 +364,41 @@ def create_heatmap_matrix(df, df_top_regions, probe_col="probe_ID", region_mode=
             [probe_col]
             .tolist()
         )
-
+    
+    # Calculate counts before capping
+    counts_before = (
+        df_top_regions[df_top_regions[probe_col].isin(region_order)]
+        ["tissue"]
+        .value_counts()
+        .rename("n_regions")
+        .to_frame()
+        .sort_index()
+    )
+    
+    # Apply max_per_tissue cap if specified
+    if max_per_tissue is not None:
+        # Check for tissues below max_per_tissue threshold
+        tissues_below_max = counts_before[counts_before["n_regions"] < max_per_tissue]
+        if not tissues_below_max.empty:
+            warning_msg = "Some tissues have fewer regions than max_per_tissue:\n"
+            for tissue, row in tissues_below_max.iterrows():
+                warning_msg += f"  - {tissue}: {row['n_regions']} regions\n"
+            warnings.warn(warning_msg, UserWarning)
+        
+        # Filter to unique regions and apply cap while preserving order
+        df_filtered = df_top_regions[df_top_regions[probe_col].isin(region_order)]
+        
+        # Group by tissue and take first max_per_tissue regions (preserves df_top_regions order)
+        capped_regions = (
+            df_filtered
+            .groupby("tissue", sort=False)
+            .head(max_per_tissue)
+            [probe_col]
+            .tolist()
+        )
+        region_order = capped_regions
+    
+    # Calculate final counts
     counts = (
         df_top_regions[df_top_regions[probe_col].isin(region_order)]
         ["tissue"]
@@ -343,28 +407,37 @@ def create_heatmap_matrix(df, df_top_regions, probe_col="probe_ID", region_mode=
         .to_frame()
         .sort_index()
     )
-
-    # reorder counts to match heatmap x-axis order
+    
+    # Reorder counts to match heatmap x-axis order
     ordered_tissues = (
         df_top_regions
         .loc[df_top_regions[probe_col].isin(region_order), "tissue"]
         .drop_duplicates()
         .tolist()
     )
-
     counts = counts.loc[ordered_tissues]
-
-    # if verbose = True, display distribution of regions in tissues.
+    
     if verbose:
         print(f"Region mode: {region_mode}")
-        print(f"Total regions used: {len(region_order)}")
-        display(counts)
-
+        
+        if max_per_tissue is not None:
+            print(f"\n--- BEFORE capping (max_per_tissue={max_per_tissue}) ---")
+            print(f"Total regions: {len(counts_before)}")
+            display(counts_before)
+            
+            print(f"\n--- AFTER capping ---")
+            print(f"Total regions: {len(region_order)}")
+            display(counts)
+        else:
+            print(f"Total regions used: {len(region_order)}")
+            display(counts)
+    
     heatmap_df = (
         df
         .set_index(probe_col)
         .loc[region_order]
     )
+    
     return heatmap_df.T, counts
 
 
@@ -494,7 +567,7 @@ def plot_clustered_tissue_correlation(tissue_corr, figsize=(10, 10), title=None)
 
 
 # ---------------------------------- Pipeline Configuration ------------------------------------
-""" PIPELINE CONFIG"""
+""" PIPELINE CONFIG 20 Tissues"""
 
 # input dataframe
 DATAFRAME = df_merged            # tissue-averaged beta matrix (probe_ID + tissues)
@@ -502,6 +575,7 @@ DATAFRAME = df_merged            # tissue-averaged beta matrix (probe_ID + tissu
 # use filtering + diff ranking (True) VS. Only diff ranking (False)
 USE_FILTERING = True               # passed to build_tissue_diff_table
 USE_VERBOSE = True                 # display the distribution of regions in cell types.
+MAX_PER_TISSUE = 50
 
 # region selection
 TOP_N = 200                        # number of top regions per tissue
@@ -521,7 +595,7 @@ CLUSTERED_CORR_TITLE = "Clustered tissue–tissue methylation correlation"
 
 
 # ----------------------------------------- PIPELINE ------------------------------------------
-""" FULL PIPELINE"""
+""" FULL PIPELINE - 21 TISSUES """
 
 # Step 1: compute per-tissue differential tables
 all_tissues_results = build_tissue_diff_table(
@@ -540,6 +614,7 @@ heatmap_matrix, regions_per_tissue_count = create_heatmap_matrix(
     df=DATAFRAME,
     df_top_regions=df_top_regions,
     region_mode=REGION_MODE,
+    max_per_tissue=MAX_PER_TISSUE,
     verbose=USE_VERBOSE
 )
 
@@ -548,7 +623,7 @@ plot_heatmap(
     heatmap_matrix,
     regions_per_tissue_count,
     top_n=TOP_N,
-    title=f"{HEATMAP_TITLE} (top {TOP_N} regions per tissue) - {REGION_MODE} regions"
+    title=f"{HEATMAP_TITLE} (top {TOP_N} regions per tissue, truncated at {MAX_PER_TISSUE} regions per tissue) - {REGION_MODE} regions"
 )
 
 # Step 5: compute tissue–tissue correlation matrix
@@ -575,5 +650,6 @@ plot_clustered_tissue_correlation(
     tissue_corr,
     title=CLUSTERED_CORR_TITLE
 )
+
 
 
