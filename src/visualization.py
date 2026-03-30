@@ -18,8 +18,7 @@ blue_yellow = LinearSegmentedColormap.from_list(
 )
 
 
-# --------------------------- HELPER ------------------------------------------
-
+# --------------------------- helper function----------------------------------------
 def _save_or_close(output_path=None, dpi=150):
     """
     Save the current figure to disk if output_path is provided, then close it.
@@ -39,9 +38,6 @@ def _save_or_close(output_path=None, dpi=150):
         plt.savefig(output_path, dpi=dpi, bbox_inches="tight")
         print(f"Figure saved -> {output_path}")
     plt.close("all")
-
-
-# --------------------------- FUNCTION DEFINITIONS -----------------------------
 
 def plot_heatmap(
     heatmap_matrix,
@@ -347,5 +343,3 @@ def plot_pca_validation(
     plt.title(f"PCA on atlas-selected regions{suffix}")
     plt.tight_layout()
     _save_or_close(_pca_path("PC3_PC4"), dpi=dpi)
-
-# ------------------------------- END OF FUNCTION DEFINITIONS ----------------------------------

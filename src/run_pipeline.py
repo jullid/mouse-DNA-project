@@ -43,6 +43,7 @@ def main():
     # ---------------------------------------------------------------------------------------------
 
 
+
     # ----------------------------------------- PIPELINE ------------------------------------------
     """ FULL PIPELINE - 20 TISSUES """
     # Step 1: compute per-tissue differential tables
@@ -70,8 +71,8 @@ def main():
     visualization.plot_heatmap(
         heatmap_matrix,
         regions_per_tissue_count,
-        top_n=TOP_N,
-        title=f"{HEATMAP_TITLE} (top {TOP_N} regions per tissue, truncated at {MAX_PER_TISSUE} regions per tissue) - {REGION_MODE} regions",
+        top_n=50, #TOP_N,
+        title= f"{HEATMAP_TITLE} (top {MAX_PER_TISSUE} {REGION_MODE} regions per tissue)", #f"{HEATMAP_TITLE} (top {TOP_N} regions per tissue, truncated at {MAX_PER_TISSUE} regions per tissue) - {REGION_MODE} regions",
         output_path=FIGURES_DIR / f"heatmap.{FMT}",
         dpi=DPI,
     )
@@ -122,6 +123,14 @@ def main():
         df_annotated=df_annot_final,
         output_path=output_path
     )
+
+    # # Step 11: save heatmap_matrix (selected regions) to disk for use in downstream notebooks/scripts
+    # heatmap_matrix_path = config.DATA_DIR / "processed" / "top_50_regions_df.csv"
+    # heatmap_matrix.to_csv(heatmap_matrix_path)
+    # print(f"heatmap_matrix saved -> {heatmap_matrix_path}")
+    # # Note that heatmap_matrix has tissues as the index (row labels).
+    # # When you load it back in the notebook you'll need pd.read_csv(path, index_col=0) to restore them correctly.
+
     # ---------------------------------------------------------------------------------------------
 
     # Some more sanity checks:

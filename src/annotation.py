@@ -197,5 +197,3 @@ def export_annotated_regions_excel(
 
     wb.save(output_path)
     print(f"Excel saved → {output_path}")
-
-# ------------------------------- END OF FUNCTION DEFINITIONS ----------------------------------

@@ -102,6 +102,18 @@ REMOVE:
 This is done by filtering celltype_df and then merging celltypes. Expected: (525 regions, 21 tissues). HOWEVER, we will now use more than top25 regions -> Maybe top 100, 250 or even 500.
 """
 
+# Module-level constants -- single source of truth for tissue merges and exclusions.
+# Imported by classifier_data.py (and any future scripts) to stay in sync with the pipeline.
+MERGE_GROUPS = {
+    "Eye_Retina":                 ["Eye", "Retina"],
+    "Brain_Cortex_Subcortical":   ["Brain_Cortex", "Subcortical_Brain"],
+    "Blood_Spleen_Thymus":        ["Blood", "Spleen", "Thymus"],
+    "Skin_Ears_Tail":             ["Skin", "Ears", "Tail"],
+}
+
+EXCLUDED_TISSUES = {"Sciatic_Nerve", "Optic_Nerve", "Mammary_Glands"}
+
+
 def build_merged_df(df_celltype: pd.DataFrame) -> pd.DataFrame:
     """
     Apply tissue-level merges and removals to the cell-type-averaged DataFrame.
@@ -112,15 +124,11 @@ def build_merged_df(df_celltype: pd.DataFrame) -> pd.DataFrame:
     Returns df_merged with probe_ID + merged/remaining tissue columns.
     """
     # Drop columns that we don't need (or too low signal)
-    df_filtered_tissues = df_celltype.drop(columns=['Sciatic_Nerve', 'Optic_Nerve', 'Mammary_Glands'])
+    df_filtered_tissues = df_celltype.drop(columns=list(EXCLUDED_TISSUES))
 
     # Define "merge groups", the KEYS are the new merged tissue names.
-    merge_groups = {
-        "Eye_Retina":                 ["Eye", "Retina"],
-        "Brain_Cortex_Subcortical":   ["Brain_Cortex", "Subcortical_Brain"],
-        "Blood_Spleen_Thymus":        ["Blood", "Spleen", "Thymus"],
-        "Skin_Ears_Tail":             ["Skin", "Ears", "Tail"],
-    }
+    # Note: uses module-level MERGE_GROUPS constant defined above.
+    merge_groups = MERGE_GROUPS
 
     # Build new merged df
     df_merged = pd.DataFrame()

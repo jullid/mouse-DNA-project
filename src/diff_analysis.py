@@ -301,5 +301,3 @@ def create_heatmap_matrix(
     )
 
     return heatmap_df.T, counts
-
-# ------------------------------- END OF FUNCTION DEFINITIONS ----------------------------------
