@@ -8,7 +8,7 @@ Using region level DNA methylation data across a wide range of mouse tissues, th
 
 ## Heatmap of Top Regions
 
-![Heatmap of Top Regions](figures/heatmap_top_regions.png)
+![Heatmap of Top Regions](figures/heatmap.png)
 
 ## Atlas Construction
 
