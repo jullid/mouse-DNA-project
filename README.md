@@ -105,6 +105,7 @@ Definitions are stored in `data_loading.py` (`MERGE_GROUPS`, `EXCLUDED_TISSUES`)
 
 ## Directory Structure
 
+```text
 mouse-DNA-project/
 ├── .venv/
 ├── .gitignore
@@ -145,7 +146,7 @@ mouse-DNA-project/
     ├── clustered_tissue_correlation.png
     ├── classifier/
     └── deconvolution/
-
+```
 ---
 
 ## Pipeline Design Principles
