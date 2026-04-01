@@ -289,40 +289,6 @@ def _save_or_close(output_path=None, dpi=150):
     plt.close("all")
 
 
-def plot_reference_heatmap(
-    W_masked: pd.DataFrame,
-    title: str = "Reference atlas heatmap (leakage-safe split)",
-    output_path: Path = None,
-    dpi: int = 150,
-) -> None:
-    """
-    Plot heatmap of the reference matrix W.
-
-    Parameters
-    ----------
-    W_masked : pd.DataFrame
-        Reference matrix (probes × tissues).
-    """
-    from matplotlib.colors import LinearSegmentedColormap
-    blue_yellow = LinearSegmentedColormap.from_list("blue_yellow", ["#0000FF", "#ffff00"])
-
-    fig, ax = plt.subplots(figsize=(12, 8))
-    sns.heatmap(
-        W_masked.T,     # tissues × probes for display
-        cmap=blue_yellow,
-        vmin=0, vmax=1,
-        xticklabels=False,
-        yticklabels=True,
-        cbar_kws={"shrink": 0.75, "pad": 0.03},
-        ax=ax,
-    )
-    ax.set_xlabel("Selected probes")
-    ax.set_ylabel("Tissues")
-    ax.set_title(title)
-
-    _save_or_close(output_path, dpi=dpi)
-
-
 def plot_reference_atlas_correlation(
     corr_series: pd.Series,
     title: str = "Reference vs full-atlas tissue correlation",

@@ -14,9 +14,11 @@ from pathlib import Path
 
 import config
 import data_loading
+import diff_analysis
+import visualization
 import deconv_data
 import deconv_model
-from utils import build_centroids, select_probes_from_centroids
+from utils import build_centroids
 
 
 def main():
@@ -78,7 +80,27 @@ def main():
     print("STEP 3: Select probes from reference centroids")
     print("=" * 60)
 
-    selected_probes = select_probes_from_centroids(df_merged_ref)
+    # Run the same three-step sequence as the atlas pipeline so we get the
+    # heatmap_matrix and region counts needed for the block-style heatmap plot.
+    all_tissues_results = diff_analysis.build_tissue_diff_table(
+        df=df_merged_ref,
+        use_filtering=config.USE_FILTERING,
+    )
+
+    df_top_regions = diff_analysis.extract_top_regions(
+        all_tissues_results,
+        top_n=config.TOP_N,
+    )
+
+    ref_heatmap_matrix, ref_region_counts = diff_analysis.create_heatmap_matrix(
+        df=df_merged_ref,
+        df_top_regions=df_top_regions,
+        region_mode=config.REGION_MODE,
+        max_per_tissue=config.MAX_PER_TISSUE,
+        verbose=config.USE_VERBOSE,
+    )
+
+    selected_probes = ref_heatmap_matrix.columns.tolist()
     print(f"Probes selected: {len(selected_probes)}")
     # -------------------------------------------------------------------------------------
 
@@ -107,11 +129,13 @@ def main():
         print(f"Full-atlas probe file not found at {atlas_path}, skipping correlation check.")
         corr_series = pd.Series(dtype=float)
 
-    # reference heatmap
-    deconv_model.plot_reference_heatmap(
-        W_masked,
+    # reference heatmap — uses the same plotting function as the atlas pipeline
+    visualization.plot_heatmap(
+        ref_heatmap_matrix,
+        ref_region_counts,
+        top_n=config.MAX_PER_TISSUE,
         title=f"Reference atlas heatmap ({len(reference_cols)} replicates, "
-              f"{W_masked.shape[0]} probes)",
+              f"{ref_heatmap_matrix.shape[1]} probes, reference split only)",
         output_path=FIGURES_DIR / "reference" / f"reference_heatmap.{FMT}",
         dpi=DPI,
     )
