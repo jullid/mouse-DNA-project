@@ -113,7 +113,6 @@ mouse-DNA-project/
 ├── USAGE.md
 ├── CHANGELOG.md
 │
-├── docs/
 ├── notebooks/
 │
 ├── scripts/
