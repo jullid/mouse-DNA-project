@@ -57,12 +57,26 @@ Estimates tissue proportions from mixed methylation signals using non-negative l
   - **Reference set** (builds signature matrix and selects probes)  
   - **Mixture pool** (generates synthetic mixtures)  
 - Evaluates performance on synthetic mixtures with known ground truth  
+- Supports a staged **cfDNA blood-dominant benchmark** (see below)
+
+**cfDNA benchmark (`--regimes`):**  
+Four difficulty levels simulate mixtures where `Blood_Spleen_Thymus` is the dominant component, approximating cfDNA from blood draws. Each regime produces the same evaluation figure set written to `figures/deconvolution/mixtures/<regime>/`.
+
+| Regime | Blood fraction |
+|--------|---------------|
+| easy | 40–60 % |
+| medium | 60–80 % |
+| hard | 80–95 % |
+| healthy *(opt-in)* | 90–99 % |
+
+```bash
+python run_deconvolution.py                   # balanced baseline (unchanged)
+python run_deconvolution.py --regimes all     # all cfDNA regimes
+python run_deconvolution.py --regimes suite   # baseline + all cfDNA
+```
 
 **Current status:**  
-Deconvolution is implemented and under active evaluation. Ongoing work focuses on:
-- Verifying correctness and baseline performance  
-- Increasing mixture complexity  
-- Testing robustness under more realistic conditions  
+Baseline benchmark is implemented and validated. cfDNA benchmark is implemented and ready for evaluation.
 
 ---
 
@@ -129,6 +143,7 @@ mouse-DNA-project/
 │   ├── classifier_model.py
 │   ├── deconv_data.py
 │   ├── deconv_model.py
+│   ├── deconv_regimes.py
 │   ├── run_pipeline.py
 │   ├── run_classifier.py
 │   └── run_deconvolution.py

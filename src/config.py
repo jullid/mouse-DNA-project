@@ -55,6 +55,29 @@ DECONV_MIXTURE_SEED     = 123      # random seed for mixture generation
 # full-atlas probe panel (produced by run_pipeline.py, used as default probe panel)
 DECONV_ATLAS_PROBES_PATH = DATA_DIR / "processed" / "top_50_regions_df.csv"
 
+# barplot selection (for plot_selected_mixture_barplots)
+DECONV_BARPLOT_K       = 4     # exact component count to filter mixtures; must be ≤ DECONV_K_MAX
+DECONV_BARPLOT_N_PLOTS = 10    # number of mixture panels in the figure
+DECONV_BARPLOT_SEED    = 42    # random seed for reproducible mixture selection
+
+# -------------------------------- cfDNA Blood-Dominant Benchmark --------------------------------
+# The blood tissue key in MERGE_GROUPS
+DECONV_CFDNA_BLOOD_TISSUE   = "Blood_Spleen_Thymus"
+
+# Non-blood tissue count per mixture (uniform draw from [k_nb_min, k_nb_max])
+DECONV_CFDNA_K_NB_MIN       = 2
+DECONV_CFDNA_K_NB_MAX       = 5
+
+# Dirichlet concentration for the non-blood proportion split
+DECONV_CFDNA_NONBLOOD_ALPHA = 0.5
+
+# Blood fraction bands per regime [lo, hi) — uniform draw
+DECONV_CFDNA_EASY_RANGE    = (0.40, 0.60)
+DECONV_CFDNA_MEDIUM_RANGE  = (0.60, 0.80)
+DECONV_CFDNA_HARD_RANGE    = (0.80, 0.95)
+DECONV_CFDNA_HEALTHY_RANGE = (0.90, 0.99)  # opt-in; near-healthy cfDNA
+
 # output paths
-DECONV_OUTPUT_DIR  = OUTPUT_DIR / "deconvolution"
-DECONV_FIGURES_DIR = FIGURES_DIR / "deconvolution"
+DECONV_OUTPUT_DIR       = OUTPUT_DIR / "deconvolution"
+DECONV_FIGURES_DIR      = FIGURES_DIR / "deconvolution"
+DECONV_MIXTURES_FIG_DIR = FIGURES_DIR / "deconvolution" / "mixtures"

@@ -87,10 +87,11 @@ python run_classifier.py
 12. Generates evaluation plots (scatter per tissue, MAE by components, residuals, per-tissue MAE)
 
 ```bash
+# Legacy: balanced baseline at existing flat figure paths (default behaviour)
 python run_deconvolution.py
 ```
 
-**Outputs:**
+**Outputs (legacy / no-flag run):**
 
 | Output | Location |
 |--------|----------|
@@ -99,10 +100,52 @@ python run_deconvolution.py
 | Reference vs atlas correlation | `figures/deconvolution/reference/reference_atlas_corr.{fmt}` |
 | Proportion distributions | `figures/deconvolution/mixtures/proportion_dist.{fmt}` |
 | Mixture PCA projection | `figures/deconvolution/mixtures/mixture_pca.{fmt}` |
+| Selected mixture barplot | `figures/deconvolution/mixtures/selected_barplots.{fmt}` |
 | True vs estimated scatter | `figures/deconvolution/eval_scatter_per_tissue.{fmt}` |
 | MAE by component count | `figures/deconvolution/eval_mae_by_k.{fmt}` |
 | Residual histogram | `figures/deconvolution/eval_residuals.{fmt}` |
 | Per-tissue MAE | `figures/deconvolution/eval_per_tissue_mae.{fmt}` |
+
+---
+
+### cfDNA Blood-Dominant Benchmark (`--regimes`)
+
+Run one or more blood-dominant benchmark regimes that simulate cfDNA-like mixtures where `Blood_Spleen_Thymus` is forced in as a dominant component.
+
+```bash
+# Single regime
+python run_deconvolution.py --regimes cfdna_easy
+
+# Multiple explicit regimes
+python run_deconvolution.py --regimes cfdna_easy cfdna_hard
+
+# Shorthand: all cfDNA regimes (easy + medium + hard)
+python run_deconvolution.py --regimes all
+
+# Shorthand: balanced baseline + all cfDNA regimes
+python run_deconvolution.py --regimes suite
+
+# Optional near-healthy cfDNA regime (must be named explicitly)
+python run_deconvolution.py --regimes cfdna_healthy
+python run_deconvolution.py --regimes suite cfdna_healthy
+```
+
+**Available regimes:**
+
+| Regime key | Blood fraction | Non-blood tissues |
+|------------|---------------|-------------------|
+| `baseline` | balanced (no blood bias) | 2–4 total |
+| `cfdna_easy` | 40–60 % | 2–5 |
+| `cfdna_medium` | 60–80 % | 2–5 |
+| `cfdna_hard` | 80–95 % | 2–5 |
+| `cfdna_healthy` | 90–99 % | 1–2 |
+
+**Outputs (per regime, under `figures/deconvolution/mixtures/<regime>/`):**
+
+Each regime produces the same 7-figure set:
+`proportion_dist`, `mixture_pca`, `selected_barplots`, `eval_scatter_per_tissue`, `eval_mae_by_k`, `eval_residuals`, `eval_per_tissue_mae`
+
+After all regimes finish, a cross-regime summary table is printed to stdout with: median MAE, mean Pearson r, blood MAE, and non-blood recall.
 
 **Key parameters** (all in `config.py`):
 
@@ -112,12 +155,15 @@ python run_deconvolution.py
 | `DECONV_SPLIT_SEED` | 42 | Split reproducibility seed |
 | `DECONV_MIN_POOL_REPLICATES` | 3 | Min pool replicates for mixture eligibility |
 | `DECONV_N_MIXTURES` | 1000 | Number of synthetic mixtures |
-| `DECONV_K_MIN` | 2 | Min tissues per mixture |
-| `DECONV_K_MAX` | 4 | Max tissues per mixture |
-| `DECONV_DIRICHLET_ALPHA` | 1.0 | Dirichlet concentration (1.0 = uniform) |
-| `DECONV_MIXTURE_SEED` | 123 | Mixture generation seed |
+| `DECONV_K_MIN` | 2 | Min tissues per mixture (balanced only) |
+| `DECONV_K_MAX` | 4 | Max tissues per mixture (balanced only) |
+| `DECONV_DIRICHLET_ALPHA` | 1.0 | Dirichlet concentration for balanced mixtures |
+| `DECONV_MIXTURE_SEED` | 123 | Base mixture generation seed |
+| `DECONV_CFDNA_K_NB_MIN` | 2 | Min non-blood tissues per cfDNA mixture |
+| `DECONV_CFDNA_K_NB_MAX` | 5 | Max non-blood tissues per cfDNA mixture |
+| `DECONV_CFDNA_NONBLOOD_ALPHA` | 0.5 | Dirichlet α for non-blood proportion split |
 
-**Changing the split:** Edit `DECONV_REFERENCE_FRACTION` or `DECONV_SPLIT_SEED` in `config.py` and re-run `run_deconvolution.py`. The entire pipeline re-executes: new split → new centroids → new probe selection → new mixtures → new evaluation. The split JSON is overwritten with the new configuration.
+**Changing the split:** Edit `DECONV_REFERENCE_FRACTION` or `DECONV_SPLIT_SEED` in `config.py` and re-run. The entire pipeline re-executes: new split → new centroids → new probe selection → new mixtures → new evaluation. The split JSON is overwritten.
 
 ---
 

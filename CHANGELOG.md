@@ -4,6 +4,33 @@ All notable changes to this project are documented here. Entries are in reverse 
 
 ---
 
+## [0.5.0] — cfDNA Blood-Dominant Benchmark & Barplot Port
+
+### Added
+- `deconv_regimes.py` — cfDNA benchmark regime module
+  - `REGIMES` dict — catalogue of all benchmark configs (baseline + easy/medium/hard/healthy)
+  - `resolve_regime_names()` — expands `all`/`suite` shorthands, validates names
+  - `generate_blood_dominant_mixtures()` — blood-dominant mixture generator; blood tissue always forced in, non-blood proportions via Dirichlet(α=0.5)
+  - `compute_cfdna_metrics()` — blood MAE + non-blood recall (ε=0.02) per regime
+  - `run_regime()` — runs steps 6–10 for one named regime; returns summary metrics
+- `deconv_model.py`
+  - `select_random_k_mixtures()` — selects mixture IDs by component count for barplot sampling
+  - `plot_selected_mixture_barplots()` — grouped bar chart: true vs NNLS-estimated proportions for a selected subset of mixtures (ported from `notebooks/deconvolution_explore.ipynb`)
+- `config.py` — cfDNA benchmark parameters: `DECONV_CFDNA_BLOOD_TISSUE`, `DECONV_CFDNA_K_NB_MIN/MAX`, `DECONV_CFDNA_NONBLOOD_ALPHA`, band-edge constants for each regime, `DECONV_MIXTURES_FIG_DIR`; barplot parameters: `DECONV_BARPLOT_K`, `DECONV_BARPLOT_N_PLOTS`, `DECONV_BARPLOT_SEED`
+- `PLAN.md` — project-root planning log with dated entries for each significant planning round
+
+### Changed
+- `run_deconvolution.py` — refactored into `_run_shared_setup()`, `_run_legacy_balanced()`, `_run_regimes()`. Added `--regimes` CLI flag (see Usage). No-flag behaviour is identical to before.
+- `deconv_model.py` — `select_random_k_mixtures()` extended with optional `k_max` parameter for range-based filtering (backwards compatible; existing calls use exact-k mode via `k_min` only).
+
+### Design Decisions
+- **Legacy path is unchanged:** running without `--regimes` executes the balanced benchmark at the existing flat figure paths. No files are moved or overwritten.
+- **Regime outputs are isolated:** `--regimes` writes to `figures/deconvolution/mixtures/<regime>/` with the same 7-figure set per regime. A cross-regime summary table (median MAE, mean Pearson r, blood MAE, non-blood recall) is printed after all regimes complete.
+- **Blood tissue proxy note:** `Blood_Spleen_Thymus` merges bulk blood, spleen, and thymus. Real cfDNA is granulocyte/lymphocyte-dominated; results are feasibility estimates, not quantitative cfDNA predictions.
+- **Per-regime seed offsets** (0 / 1000 / 2000 / 3000 / 4000) ensure each regime is independently reproducible regardless of which other regimes are requested.
+
+---
+
 ## [0.4.0] — Tissue Deconvolution Pipeline & Utils Refactor
 
 ### Added

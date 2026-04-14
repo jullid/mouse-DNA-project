@@ -115,6 +115,9 @@ def compute_per_mixture_metrics(
 
     For each mixture: MAE, RMSE, and Pearson correlation between true
     and estimated proportion vectors (across all tissues including zeros).
+    Also decomposes MAE into present-tissue and absent-tissue components:
+    - mae_present: mean |p_true - p_est| over tissues with p_true > 0
+    - mae_absent:  mean |p_true - p_est| over tissues with p_true == 0
 
     Parameters
     ----------
@@ -126,7 +129,8 @@ def compute_per_mixture_metrics(
     Returns
     -------
     pd.DataFrame
-        Per-mixture metrics with columns: mae, rmse, pearson_r.
+        Per-mixture metrics with columns: mae, mae_present, mae_absent,
+        rmse, pearson_r, n_components.
     """
     # align columns (in case of ordering differences)
     shared_tissues = df_true.columns.intersection(df_estimated.columns)
@@ -137,17 +141,32 @@ def compute_per_mixture_metrics(
 
     records = []
     for i in range(n_mixtures):
-        diff = true_arr[i] - est_arr[i]
-        mae  = np.abs(diff).mean()
+        true_row = true_arr[i]
+        est_row  = est_arr[i]
+        diff     = true_row - est_row
+        absdiff  = np.abs(diff)
+
+        mae  = absdiff.mean()
         rmse = np.sqrt((diff ** 2).mean())
 
+        present_mask = true_row > 0
+        absent_mask  = ~present_mask
+        mae_present  = absdiff[present_mask].mean() if present_mask.any() else np.nan
+        mae_absent   = absdiff[absent_mask].mean()  if absent_mask.any()  else np.nan
+
         # Pearson correlation (handle edge case where one vector is constant)
-        if true_arr[i].std() == 0 or est_arr[i].std() == 0:
+        if true_row.std() == 0 or est_row.std() == 0:
             pearson_r = np.nan
         else:
-            pearson_r = np.corrcoef(true_arr[i], est_arr[i])[0, 1]
+            pearson_r = np.corrcoef(true_row, est_row)[0, 1]
 
-        records.append({"mae": mae, "rmse": rmse, "pearson_r": pearson_r})
+        records.append({
+            "mae":         mae,
+            "mae_present": mae_present,
+            "mae_absent":  mae_absent,
+            "rmse":        rmse,
+            "pearson_r":   pearson_r,
+        })
 
     df_metrics = pd.DataFrame(records, index=df_true.index)
 
@@ -580,5 +599,201 @@ def plot_per_tissue_mae(
 
     plt.tight_layout()
     _save_or_close(output_path, dpi=dpi)
+
+
+def select_random_k_mixtures(
+    df_proportions: pd.DataFrame,
+    k_min: int,
+    n_plots: int,
+    k_max: int = None,
+    random_seed: int = 42,
+) -> list:
+    """Return up to n_plots mixture IDs whose non-zero component count is in [k_min, k_max].
+
+    If k_max is None the filter is exact (count == k_min), matching the original behaviour.
+    If fewer than n_plots mixtures match, all matches are returned with a warning.
+
+    Parameters
+    ----------
+    df_proportions : pd.DataFrame
+        Ground-truth proportions matrix (n_mixtures × n_tissues).
+        Returned by deconv_data.generate_synthetic_mixtures().
+    k_min : int
+        Minimum (or exact, when k_max is None) non-zero component count to filter on.
+    n_plots : int
+        Maximum number of mixture IDs to return.
+    k_max : int or None
+        Maximum non-zero component count. If None, k_min is used as the exact filter.
+    random_seed : int
+        Random seed for reproducible sampling.
+    """
+    k_effective_max = k_min if k_max is None else k_max
+    k_counts = (df_proportions > 0).sum(axis=1)
+    candidates = k_counts[
+        (k_counts >= k_min) & (k_counts <= k_effective_max)
+    ].index.tolist()
+
+    k_desc = f"k={k_min}" if k_max is None else f"k∈[{k_min},{k_effective_max}]"
+
+    if len(candidates) == 0:
+        print(f"Warning: no mixtures with {k_desc} components found. Returning empty list.")
+        return []
+
+    if len(candidates) < n_plots:
+        print(
+            f"Warning: only {len(candidates)} mixtures with {k_desc} components available "
+            f"(requested {n_plots}). Using all available."
+        )
+        return candidates
+
+    rng = np.random.default_rng(random_seed)
+    idx = rng.choice(len(candidates), size=n_plots, replace=False)
+    return [candidates[i] for i in sorted(idx)]
+
+
+def plot_selected_mixture_barplots(
+    df_proportions: pd.DataFrame,
+    df_estimated: pd.DataFrame,
+    mixture_ids: list,
+    title: str = "True vs predicted tissue proportions",
+    output_path: Path = None,
+    dpi: int = 150,
+) -> None:
+    """
+    Grouped bar plot comparing ground-truth and NNLS-estimated proportions
+    for a selected subset of mixtures.
+
+    One panel per mixture; tissues with both true == 0 and predicted == 0
+    are omitted. Within each panel tissues are sorted by true proportion
+    (descending). True bars are drawn at full opacity; predicted bars are
+    drawn at reduced opacity using the same per-tissue colour.
+
+    Parameters
+    ----------
+    df_proportions : pd.DataFrame
+        Ground-truth proportions (n_mixtures × n_tissues).
+    df_estimated : pd.DataFrame
+        NNLS-estimated proportions (n_mixtures × n_tissues).
+        Must share the same index and columns as df_proportions.
+    mixture_ids : list
+        Mixture IDs to include as panels. Each must exist in both DataFrames.
+    title : str
+        Figure suptitle.
+    output_path : Path or None
+        Destination path for the saved figure. If None, figure is closed
+        without saving (non-interactive / headless safe).
+    dpi : int
+        Resolution for raster output.
+    """
+    from matplotlib.patches import Patch
+
+    n_plots = len(mixture_ids)
+    if n_plots == 0:
+        print("Warning: no mixture IDs supplied to plot_selected_mixture_barplots. Skipping.")
+        return
+
+    # Layout: 2×5 for exactly 10 panels, otherwise compact grid
+    if n_plots == 10:
+        n_rows, n_cols = 2, 5
+    else:
+        n_cols = min(5, n_plots)
+        n_rows = int(np.ceil(n_plots / n_cols))
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 4.5 * n_rows))
+    axes = np.array(axes).reshape(-1)
+
+    tissues = list(df_estimated.columns)
+    cmap = plt.cm.get_cmap("tab20", len(tissues))
+    tissue_to_color = {t: cmap(i) for i, t in enumerate(tissues)}
+
+    bar_width = 0.38
+
+    for ax, mix_id in zip(axes, mixture_ids):
+        true_vals = df_proportions.loc[mix_id]
+        pred_vals = df_estimated.loc[mix_id]
+
+        # Keep tissues where either truth or prediction is non-zero
+        mask = ~((true_vals == 0) & (pred_vals == 0))
+        true_plot = true_vals[mask]
+        pred_plot = pred_vals[mask]
+
+        # Sort tissues by true proportion descending within each mixture
+        order = true_plot.sort_values(ascending=False).index.tolist()
+        true_plot = true_plot.loc[order]
+        pred_plot = pred_plot.loc[order]
+
+        x = np.arange(len(order))
+        tissue_colors = [tissue_to_color[t] for t in order]
+
+        # True bars (solid)
+        ax.bar(
+            x - bar_width / 2,
+            true_plot.values,
+            width=bar_width,
+            color=tissue_colors,
+            alpha=0.95,
+            edgecolor="black",
+            linewidth=0.6,
+        )
+
+        # Predicted bars (faded)
+        ax.bar(
+            x + bar_width / 2,
+            pred_plot.values,
+            width=bar_width,
+            color=tissue_colors,
+            alpha=0.45,
+            edgecolor="black",
+            linewidth=0.6,
+        )
+
+        ax.set_title(mix_id, fontsize=10)
+        ax.set_ylim(0, 1)
+        ax.set_xticks(x)
+        ax.set_xticklabels(order, rotation=90, fontsize=7)
+        ax.tick_params(axis="y", labelsize=8)
+        ax.set_ylabel("Proportion", fontsize=9)
+
+    # Hide unused subplot axes
+    for j in range(n_plots, len(axes)):
+        axes[j].set_visible(False)
+
+    # Legend: bar type (true vs predicted)
+    style_handles = [
+        Patch(facecolor="grey", edgecolor="black", alpha=0.95, label="True"),
+        Patch(facecolor="grey", edgecolor="black", alpha=0.45, label="Predicted"),
+    ]
+
+    # Legend: tissue identity
+    tissue_handles = [
+        Patch(facecolor=tissue_to_color[t], edgecolor="black", label=t)
+        for t in tissues
+    ]
+
+    fig.legend(
+        handles=style_handles,
+        loc="upper left",
+        bbox_to_anchor=(1.01, 0.98),
+        title="Bar type",
+        fontsize=8,
+        title_fontsize=9,
+        frameon=True,
+    )
+
+    fig.legend(
+        handles=tissue_handles,
+        loc="upper left",
+        bbox_to_anchor=(1.01, 0.55),
+        title="Tissue",
+        fontsize=7,
+        title_fontsize=9,
+        frameon=True,
+        ncol=1,
+    )
+
+    fig.suptitle(title, fontsize=13)
+    fig.tight_layout(rect=[0, 0, 0.82, 0.96])
+    _save_or_close(output_path, dpi=dpi)
+
 
 # ------------------------------- END OF FUNCTION DEFINITIONS ----------------------------------
