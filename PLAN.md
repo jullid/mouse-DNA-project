@@ -12,9 +12,9 @@ Most recent first. Each entry captures the context, decision, and scope of a pla
 
 | Regime        | Blood fraction | k_nonblood |
 |---------------|----------------|------------|
-| cfdna_easy    | 40–60 %        | 1–3        |
-| cfdna_medium  | 60–80 %        | 1–3        |
-| cfdna_hard    | 80–95 %        | 1–3        |
+| cfdna_easy    | 40–60 %        | 2–5        |
+| cfdna_medium  | 60–80 %        | 2–5        |
+| cfdna_hard    | 80–95 %        | 2–5        |
 | cfdna_healthy | 90–99 %        | 1–2        |
 
 **Scope**:
