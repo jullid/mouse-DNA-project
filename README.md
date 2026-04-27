@@ -70,7 +70,7 @@ Four difficulty levels simulate mixtures where `Blood_Spleen_Thymus` is the domi
 | healthy *(opt-in)* | 90–99 % |
 
 ```bash
-python run_deconvolution.py                   # balanced baseline (unchanged)
+python run_deconvolution.py                   # balanced baseline
 python run_deconvolution.py --regimes all     # all cfDNA regimes
 python run_deconvolution.py --regimes suite   # baseline + all cfDNA
 ```
