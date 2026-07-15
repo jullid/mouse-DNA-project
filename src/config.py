@@ -17,7 +17,7 @@ FIGURES_DIR = Path.home() / "projects" / "mouse-DNA-project" / "figures"
 
 # -------------------------------- Figure Output --------------------------------
 FIGURE_FORMAT = "png"              # "pdf" (vector, for papers) or "png" (raster, for quick checks)
-FIGURE_DPI    = 150                # only applies to raster formats (png, etc.)
+FIGURE_DPI    = 300                # only applies to raster formats (png, etc.)
 
 # -------------------------------- Pipeline Configuration --------------------------------
 # use filtering + diff ranking (True) VS. Only diff ranking (False)
