@@ -230,8 +230,7 @@ No sample is reused across incompatible steps.
 - Small tissue classes (e.g. Uterus, Stomach, Adrenal) limit CV robustness  
 - Hyperparameters were tuned during full-dataset exploration  
 - Classifier performance likely overestimates real-world generalisation  
-- Real data will require probe ID remapping (platform differences)  
-- Deconvolution is still under evaluation and not yet production-ready  
+- Real data will require probe ID remapping (platform differences)
 
 ---
 
