@@ -25,17 +25,20 @@ to read it. Numbers are quoted only where they are printed on the figure or by t
 
 ## 1. Atlas: `run_pipeline.py`
 
-All 240 GSE290585 replicates. Markers are the top 50 *unique* tissue-specific unmethylated regions
-per tissue (`MAX_PER_TISSUE = 50`, `REGION_MODE = "unique"`), 1000 markers in total.
+All 240 GSE290585 replicates. Markers are the top 50 *unique* tissue-specific unmethylated CpG sites
+(MM285 probes) per tissue (`MAX_PER_TISSUE = 50`, `REGION_MODE = "unique"`), 1000 markers in total;
+each site is a marker for one tissue only.
 
 ### `heatmap.png`
 
 ![Atlas heatmap](figures/heatmap.png)
 
-Rows are tissues, columns are markers grouped by the tissue they mark. Dark blue = unmethylated
-(β ≈ 0), white = methylated (β ≈ 1). Each tissue's own block on the diagonal is blue; the rest of
-its row is pale. Read the **depth** of each block: dark blue (Cerebellum, Testis, Liver, Eye_Retina)
-means markers close to fully unmethylated; light blue (Lung, Heart, Diaphragm, Bile_Duct, Stomach)
+Rows are tissues, columns are markers grouped by the tissue they mark. Each block on the diagonal
+is the 50 CpG sites selected for one tissue: sites that are unmethylated in that tissue but
+methylated in the others, forming its tissue-specific markers. Dark blue = unmethylated (β ≈ 0),
+white = methylated (β ≈ 1), so each tissue's own block is blue and the rest of its row is pale.
+Read the **depth** of each block: dark blue (Cerebellum, Testis, Liver, Eye_Retina) means markers
+close to fully unmethylated; light blue (Lung, Heart, Diaphragm, Bile_Duct, Stomach)
 means markers that are only partly unmethylated, which is a weaker signal downstream.
 
 ### `tissue_correlation.png`, `clustered_tissue_correlation.png`, `dendrogram.png`
