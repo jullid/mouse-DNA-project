@@ -3,6 +3,8 @@ data/
 *.tsv
 *.csv
 *.txt
+*.xlsx
+results/**/*.md
 # Keep documentation
 !data/README.md 
 
@@ -14,6 +16,7 @@ data/
 *.bam
 *.bai
 *.csi
+*.soft
 
 # ---- Binary / large files ----
 *.bin
@@ -21,13 +24,19 @@ data/
 *.hdf5
 *.npz
 
+# ---- Figures: PNG only ----
+figures/**/*.svg
+figures/**/*.pdf
+
 # ---- Jupyter outputs ----
 .ipynb_checkpoints/
 
 # ---- Python environments ----
 .venv/
+venv/
+env/
 __pycache__/
-*.pyc
+*.py[cod]
 
 
 # ---- VS Code ----
@@ -37,3 +46,7 @@ __pycache__/
 .claude/
 .claude-cache/
 .claudeignore
+
+# ---- Other Things to be ignored ----
+notebooks/scratch/
+PLAN.md

@@ -91,7 +91,7 @@ After analysis of (725 region, 29 tissue) correlation matrix, we will do the fol
 MERGE:
 - Retina & Eye
 - Brain_Cortex & Subcortinal_Brain
-- Thymus & Blood & Spleen
+- Blood & Spleen
 - Tail & Ear & Skin
 
 REMOVE:
@@ -107,11 +107,11 @@ This is done by filtering celltype_df and then merging celltypes. Expected: (525
 MERGE_GROUPS = {
     "Eye_Retina":                 ["Eye", "Retina"],
     "Brain_Cortex_Subcortical":   ["Brain_Cortex", "Subcortical_Brain"],
-    "Blood_Spleen_Thymus":        ["Blood", "Spleen", "Thymus"],
+    "Blood_Spleen":               ["Blood", "Spleen"],
     "Skin_Ears_Tail":             ["Skin", "Ears", "Tail"],
 }
 
-EXCLUDED_TISSUES = {"Sciatic_Nerve", "Optic_Nerve", "Mammary_Glands"}
+EXCLUDED_TISSUES = {"Sciatic_Nerve", "Optic_Nerve", "Mammary_Glands", "Thymus"}
 
 
 def build_merged_df(df_celltype: pd.DataFrame) -> pd.DataFrame:

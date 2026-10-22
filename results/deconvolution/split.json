@@ -1,8 +1,8 @@
 {
   "reference_fraction": 0.5,
   "split_seed": 42,
-  "n_reference": 119,
-  "n_pool": 128,
+  "n_reference": 116,
+  "n_pool": 124,
   "reference": [
     "Adrenal",
     "Adrenal.1",
@@ -115,14 +115,11 @@
     "Testis.9",
     "Testis.5",
     "Testis.4",
-    "Thymus.2",
-    "Thymus.6",
-    "Thymus.4",
-    "Urinary_Bladder.3",
-    "Urinary_Bladder.1",
     "Urinary_Bladder.2",
-    "Uterus.2",
-    "Uterus.3"
+    "Urinary_Bladder.5",
+    "Urinary_Bladder.3",
+    "Uterus.1",
+    "Uterus.2"
   ],
   "pool": [
     "Adrenal.2",
@@ -244,14 +241,10 @@
     "Testis.1",
     "Testis.6",
     "Testis.3",
-    "Thymus.3",
-    "Thymus.5",
-    "Thymus.1",
-    "Thymus",
-    "Urinary_Bladder.5",
-    "Urinary_Bladder",
     "Urinary_Bladder.4",
-    "Uterus",
-    "Uterus.1"
+    "Urinary_Bladder.1",
+    "Urinary_Bladder",
+    "Uterus.3",
+    "Uterus"
   ]
 }

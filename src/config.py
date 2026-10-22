@@ -1,10 +1,14 @@
+import os
 from pathlib import Path
 
 # -------------------------------- Paths --------------------------------
-DATA_DIR = Path.home() / "projects" / "data"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]     # repository root, wherever it is cloned
+
+# External data folder (raw/, original/, processed/, external/). Set MOUSE_DNA_DATA to override.
+DATA_DIR = Path(os.environ.get("MOUSE_DNA_DATA", Path.home() / "projects" / "data"))
 #DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-OUTPUT_DIR = Path.home() / "projects" / "mouse-DNA-project" / "results"
+OUTPUT_DIR = PROJECT_ROOT / "results"
 #OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 CSV_FILE  = DATA_DIR / "processed" / "GSE290585_SeSaMeBeta_MM285_BS_simplified_columns.csv"
@@ -12,11 +16,11 @@ ANNOT_FILE = DATA_DIR / "original" / "12_02_2026_MM285.csv"
 
 OUTPUT_EXCEL = OUTPUT_DIR / "mouse_methylation_markers.xlsx"
 
-FIGURES_DIR = Path.home() / "projects" / "mouse-DNA-project" / "figures"
+FIGURES_DIR = PROJECT_ROOT / "figures"
 #FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
 # -------------------------------- Figure Output --------------------------------
-FIGURE_FORMAT = "png"              # "pdf" (vector, for papers) or "png" (raster, for quick checks)
+FIGURE_FORMAT = "png"              # "pdf" (vector, for papers) or "png" (raster, for quick checks) or "svg" (web, vector)
 FIGURE_DPI    = 300                # only applies to raster formats (png, etc.)
 
 # -------------------------------- Pipeline Configuration --------------------------------
@@ -59,10 +63,11 @@ DECONV_ATLAS_PROBES_PATH = DATA_DIR / "processed" / "top_50_regions_df.csv"
 DECONV_BARPLOT_K       = 4     # exact component count to filter mixtures; must be ≤ DECONV_K_MAX
 DECONV_BARPLOT_N_PLOTS = 10    # number of mixture panels in the figure
 DECONV_BARPLOT_SEED    = 42    # random seed for reproducible mixture selection
+DECONV_BARPLOT_LOG_YMIN = 1e-3 # y-axis floor for selected_barplots_log; bars below are not drawn
 
 # -------------------------------- cfDNA Blood-Dominant Benchmark --------------------------------
 # The blood tissue key in MERGE_GROUPS
-DECONV_CFDNA_BLOOD_TISSUE   = "Blood_Spleen_Thymus"
+DECONV_CFDNA_BLOOD_TISSUE   = "Blood_Spleen"
 
 # Non-blood tissue count per mixture (uniform draw from [k_nb_min, k_nb_max])
 DECONV_CFDNA_K_NB_MIN       = 2

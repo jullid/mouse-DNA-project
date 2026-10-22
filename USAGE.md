@@ -4,8 +4,14 @@ All scripts are in `src/` and should be run from that directory.
 
 ## Prerequisites
 
+The input files listed in the README ("Prerequisites: input data") must be in the data folder `config.DATA_DIR`. It defaults to `~/projects/data`; to use another location, set:
+
 ```bash
-cd ~/projects/mouse-DNA-project
+export MOUSE_DNA_DATA=/path/to/data
+```
+
+```bash
+cd mouse-DNA-project
 source .venv/bin/activate
 cd src
 ```
@@ -31,16 +37,15 @@ python -c "import config; print('CSV:', config.CSV_FILE.exists()); print('Annot:
 6. Generates heatmap, correlation, dendrogram, and clustered correlation plots
 7. Joins selected probes with genomic annotation metadata
 8. Exports annotated markers to Excel
+9. Saves the marker panel (tissues × selected probes) to `<DATA_DIR>/processed/top_50_regions_df.csv`
 
 ```bash
 python run_pipeline.py
 ```
 
-**Outputs:** `figures/heatmap.{fmt}`, `figures/tissue_correlation.{fmt}`, `figures/dendrogram.{fmt}`, `figures/clustered_tissue_correlation.{fmt}`, `results/mouse_methylation_markers.xlsx`
+**Outputs:** `figures/heatmap.{fmt}`, `figures/tissue_correlation.{fmt}`, `figures/dendrogram.{fmt}`, `figures/clustered_tissue_correlation.{fmt}`, `results/mouse_methylation_markers.xlsx`, `<DATA_DIR>/processed/top_50_regions_df.csv`
 
 **Key parameters:** `TOP_N`, `MAX_PER_TISSUE`, `REGION_MODE`, `USE_FILTERING` (all in `config.py`)
-
-**Note:** To save the heatmap matrix for downstream use, uncomment Step 11 at the bottom of `run_pipeline.py`. This produces `data/processed/top_50_regions_df.csv`, which the deconvolution pipeline uses as its default probe panel.
 
 ---
 
@@ -50,7 +55,7 @@ python run_pipeline.py
 
 **What it does:**
 1. Loads raw replicate matrix, extracts tissue labels, applies merging
-2. Holds out 1 sample per original tissue type as a fixed test set (26 test samples)
+2. Holds out 1 sample per original tissue type as a fixed test set (25 test samples, one per non-excluded original tissue)
 3. Runs stratified k-fold CV with probe selection inside each fold (no leakage)
 4. Reports CV metrics (balanced accuracy, macro F1, per-fold probe counts)
 5. Fits final model on all training data, evaluates on held-out test set
@@ -70,7 +75,7 @@ python run_classifier.py
 
 **Script:** `run_deconvolution.py`
 
-**Prerequisite:** The full-atlas probe panel must exist at `data/processed/top_50_regions_df.csv`. Run Pipeline 1 with Step 11 uncommented first to produce it (used only for the reference-vs-atlas correlation check; the deconvolution runs its own probe selection on the reference split).
+**Prerequisite:** The full-atlas probe panel must exist at `<DATA_DIR>/processed/top_50_regions_df.csv`; run Pipeline 1 first to produce it. It is used only for the reference-vs-atlas correlation check; the deconvolution runs its own probe selection on the reference split.
 
 **What it does:**
 1. Loads raw replicate matrix, excludes dropped tissues
@@ -84,14 +89,14 @@ python run_classifier.py
 9. Validates mixtures (beta range, proportion sums, distribution checks, PCA projection)
 10. Runs NNLS deconvolution for each mixture against W
 11. Evaluates: per-mixture MAE/RMSE/correlation, per-tissue MAE and false positive rates
-12. Generates evaluation plots (scatter per tissue, MAE by components, residuals, per-tissue MAE)
+12. Generates evaluation plots (scatter per tissue, MAE by components, residuals, per-tissue MAE) and barplots of selected mixtures on linear and log y-axes
 
 ```bash
-# Legacy: balanced baseline at existing flat figure paths (default behaviour)
+# Balanced baseline at the flat figure paths (default behaviour)
 python run_deconvolution.py
 ```
 
-**Outputs (legacy / no-flag run):**
+**Outputs (no-flag run):**
 
 | Output | Location |
 |--------|----------|
@@ -101,6 +106,7 @@ python run_deconvolution.py
 | Proportion distributions | `figures/deconvolution/mixtures/proportion_dist.{fmt}` |
 | Mixture PCA projection | `figures/deconvolution/mixtures/mixture_pca.{fmt}` |
 | Selected mixture barplot | `figures/deconvolution/mixtures/selected_barplots.{fmt}` |
+| Selected mixture barplot, log y-axis | `figures/deconvolution/mixtures/selected_barplots_log.{fmt}` |
 | True vs estimated scatter | `figures/deconvolution/eval_scatter_per_tissue.{fmt}` |
 | MAE by component count | `figures/deconvolution/eval_mae_by_k.{fmt}` |
 | Residual histogram | `figures/deconvolution/eval_residuals.{fmt}` |
@@ -110,7 +116,7 @@ python run_deconvolution.py
 
 ### cfDNA Blood-Dominant Benchmark (`--regimes`)
 
-Run one or more blood-dominant benchmark regimes that simulate cfDNA-like mixtures where `Blood_Spleen_Thymus` is forced in as a dominant component.
+Run one or more blood-dominant benchmark regimes that simulate cfDNA-like mixtures where `Blood_Spleen` is forced in as a dominant component.
 
 ```bash
 # Single regime
@@ -138,12 +144,12 @@ python run_deconvolution.py --regimes suite cfdna_healthy
 | `cfdna_easy` | 40–60 % | 2–5 |
 | `cfdna_medium` | 60–80 % | 2–5 |
 | `cfdna_hard` | 80–95 % | 2–5 |
-| `cfdna_healthy` | 90–99 % | 1–2 |
+| `cfdna_healthy` | 90–99 % | 2 |
 
-**Outputs (per regime, under `figures/deconvolution/mixtures/<regime>/`):**
+**Outputs (per regime, under `figures/deconvolution/mixtures/<regime>/`, with `<regime>` = `balanced`, `easy`, `medium`, `hard` or `healthy`):**
 
-Each regime produces the same 7-figure set:
-`proportion_dist`, `mixture_pca`, `selected_barplots`, `eval_scatter_per_tissue`, `eval_mae_by_k`, `eval_residuals`, `eval_per_tissue_mae`
+Each regime produces the same 8-figure set:
+`proportion_dist`, `mixture_pca`, `selected_barplots`, `selected_barplots_log`, `eval_scatter_per_tissue`, `eval_mae_by_k`, `eval_residuals`, `eval_per_tissue_mae`
 
 After all regimes finish, a cross-regime summary table is printed to stdout with: median MAE, mean Pearson r, blood MAE, and non-blood recall.
 
@@ -162,23 +168,12 @@ After all regimes finish, a cross-regime summary table is printed to stdout with
 | `DECONV_CFDNA_K_NB_MIN` | 2 | Min non-blood tissues per cfDNA mixture |
 | `DECONV_CFDNA_K_NB_MAX` | 5 | Max non-blood tissues per cfDNA mixture |
 | `DECONV_CFDNA_NONBLOOD_ALPHA` | 0.5 | Dirichlet α for non-blood proportion split |
+| `DECONV_BARPLOT_K` | 4 | Component count of the mixtures shown in `selected_barplots` (balanced) |
+| `DECONV_BARPLOT_N_PLOTS` | 10 | Number of mixture panels per barplot figure |
+| `DECONV_BARPLOT_SEED` | 42 | Seed for the barplot mixture selection |
+| `DECONV_BARPLOT_LOG_YMIN` | 1e-3 | y-axis floor of `selected_barplots_log`; bars below it are not drawn |
 
 **Changing the split:** Edit `DECONV_REFERENCE_FRACTION` or `DECONV_SPLIT_SEED` in `config.py` and re-run. The entire pipeline re-executes: new split → new centroids → new probe selection → new mixtures → new evaluation. The split JSON is overwritten.
-
----
-
-## Running from Notebooks
-
-To import pipeline modules from a notebook in `notebooks/`:
-
-```python
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path("../src")))
-
-import data_loading
-import config
-```
 
 ---
 
@@ -188,7 +183,7 @@ import config
 python data_loading.py
 ```
 
-Prints shapes and column names for df_raw, df_celltype, and df_merged.
+Checks that the data and annotation files exist, then prints the shapes of df_raw, df_celltype and df_merged and the merged tissue names.
 
 ---
 
@@ -196,4 +191,4 @@ Prints shapes and column names for df_raw, df_celltype, and df_merged.
 
 - All plots use `matplotlib.use("Agg")` — no display server required.
 - Figures are saved to disk and closed immediately to free memory.
-- Figure format configurable: `"png"` for quick checks, `"pdf"` for publication quality.
+- Figure format is set by `FIGURE_FORMAT` in `config.py` (`"png"` by default; `"pdf"` or `"svg"` for vector output). Only PNG figures are tracked in the repository.

@@ -326,6 +326,21 @@ def _run_legacy_balanced(shared_inputs: dict, figures_dir: Path, fmt: str, dpi: 
         dpi=dpi,
     )
 
+    # same panels, log y-axis
+    deconv_model.plot_selected_mixture_barplots(
+        df_proportions=df_proportions,
+        df_estimated=df_estimated,
+        mixture_ids=selected_ids,
+        title=(
+            f"True vs predicted tissue proportions for "
+            f"{len(selected_ids)} random k={BARPLOT_K} mixtures (log scale)"
+        ),
+        output_path=figures_dir / "mixtures" / f"selected_barplots_log.{fmt}",
+        dpi=dpi,
+        log_scale=True,
+        log_ymin=config.DECONV_BARPLOT_LOG_YMIN,
+    )
+
     # ---- Summary ----------------------------------------------------------
     print()
     print("=" * 60)

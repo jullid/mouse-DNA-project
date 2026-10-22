@@ -12,7 +12,7 @@ All code builds on deconv_data, deconv_model, and config. The leakage-safe
 reference/pool split produced in steps 1–5 of run_deconvolution.py is passed in
 unchanged.
 
-Realism note: Blood_Spleen_Thymus merges bulk blood, spleen, and thymus replicates.
+Realism note: Blood_Spleen merges bulk blood and spleen replicates.
 Real cfDNA is granulocyte/lymphocyte-dominated; this is a first-order proxy.
 Mixtures are built from bulk beta profiles, not fragmented/size-selected cfDNA.
 Results are feasibility estimates, not quantitative cfDNA predictions.
@@ -508,6 +508,21 @@ def run_regime(
         ),
         output_path=out_dir / f"selected_barplots.{fmt}",
         dpi=dpi,
+    )
+
+    # same panels, log y-axis
+    deconv_model.plot_selected_mixture_barplots(
+        df_proportions=df_proportions,
+        df_estimated=df_estimated,
+        mixture_ids=selected_ids,
+        title=(
+            f"True vs predicted proportions for {len(selected_ids)} mixtures "
+            f"— regime: {cfg['label']} (log scale)"
+        ),
+        output_path=out_dir / f"selected_barplots_log.{fmt}",
+        dpi=dpi,
+        log_scale=True,
+        log_ymin=config.DECONV_BARPLOT_LOG_YMIN,
     )
 
     # ---- cfDNA-specific metrics (baseline gets None values) ----------------

@@ -3,6 +3,54 @@
 All notable changes to this project are documented here. Entries are in reverse chronological order.
 
 ---
+## [Unreleased]
+
+### Added
+- `notebooks/publication_preprocessing.ipynb`: converts GSE196902, an independent MM285 cohort, into
+  the atlas file layout: the 56 normal-tissue samples (11 cell lines dropped), 287,050 probes
+  (285,797 shared with the atlas), tissue labels from the GEO SOFT metadata.
+- `notebooks/publication.ipynb`: validation and publication figures, built on the `src` modules.
+  - Part I: GSE196902 deconvolved against the full-atlas W (pure samples, synthetic mixtures
+    k = 1–4, held-out tissues), and the limit of detection with blood fixed at 85 % for GSE290585
+    and GSE196902 on one shared reference-half W, with a per-tissue LOD summary.
+  - Part II: blood-fixed Scenario A/B, a one-tissue recovery map with an NNLS fit-error strip, and
+    the cfDNA-hard regime rebuilt from `src` with log-scale barplots and per-probe residuals.
+  - Part III: NNLS deconvolution of four external mm10 datasets (GSE42836, GSE106379, GSE93957,
+    GSE184410) after per-sample coverage QC.
+  - Every figure is shown inline; files are written to `figures/publication/` when
+    `SAVE_FIGURES = True`.
+- `run_deconvolution.py` writes `selected_barplots_log` next to every `selected_barplots` (default
+  run and each `--regimes` folder): the same panels on a log y-axis from
+  `config.DECONV_BARPLOT_LOG_YMIN` (1e-3). `deconv_model.plot_selected_mixture_barplots()` gains
+  `log_scale` and `log_ymin`.
+- `FIGURES.md`: catalogue of the atlas, benchmark and main publication figures.
+
+### Changed
+- Thymus removed from the `Blood_Spleen_Thymus` merge and added to `EXCLUDED_TISSUES`; the merged
+  tissue is renamed `Blood_Spleen`. On the marker panel, Blood vs Spleen is R² = 0.941, while Blood
+  vs Thymus and Spleen vs Thymus are both ~0.57, barely above Brain_Cortex_Subcortical vs
+  Spinal_Cord (R² = 0.454), a pair the atlas keeps separate. Usable atlas replicates: 247 → 240;
+  `Blood_Spleen`: 30 → 23 replicates; still 20 merged classes. `config.DECONV_CFDNA_BLOOD_TISSUE`
+  updated to match.
+- `config.py`: results and figure paths follow the repository location (`PROJECT_ROOT`), and
+  `DATA_DIR` can be set with the `MOUSE_DNA_DATA` environment variable (default `~/projects/data`).
+- `run_pipeline.py` writes the marker panel to `<DATA_DIR>/processed/top_50_regions_df.csv` on
+  every run (previously commented out).
+- `visualization.py`: the atlas heatmap uses `Blues_r` and the correlation plots use `vlag`.
+- Figures: only PNG is tracked (`figures/**/*.svg` and `figures/**/*.pdf` are ignored).
+
+### Fixed
+- `deconv_model.plot_mae_by_components()` now plots `mae_present` (error over the tissues actually in
+  the mixture) instead of `mae` (error over all 20 tissue columns). The old metric averaged k non-zero
+  components against 20-k near-zero ones, so it rose with k even though per-component accuracy
+  improves with k. Pass `metric="mae"` for the old behaviour or `metric="mae_absent"` to show mass
+  leaking onto absent tissues.
+- `deconv_model.print_evaluation_summary()` reports the present-only median MAE per k alongside the
+  existing figure, so the log and `eval_mae_by_k.png` agree.
+
+### Removed
+- Exploratory notebooks (`01_tissue_classifier`, `data_prep`, `deconvolution_explore`,
+  `difference`, `explore`, `mixture_eval`, `model`) and `scripts/pipeline.py`.
 
 ## [0.5.0] — cfDNA Blood-Dominant Benchmark & Barplot Port
 
@@ -15,9 +63,8 @@ All notable changes to this project are documented here. Entries are in reverse 
   - `run_regime()` — runs steps 6–10 for one named regime; returns summary metrics
 - `deconv_model.py`
   - `select_random_k_mixtures()` — selects mixture IDs by component count for barplot sampling
-  - `plot_selected_mixture_barplots()` — grouped bar chart: true vs NNLS-estimated proportions for a selected subset of mixtures (ported from `notebooks/deconvolution_explore.ipynb`)
+  - `plot_selected_mixture_barplots()` — grouped bar chart: true vs NNLS-estimated proportions for a selected subset of mixtures
 - `config.py` — cfDNA benchmark parameters: `DECONV_CFDNA_BLOOD_TISSUE`, `DECONV_CFDNA_K_NB_MIN/MAX`, `DECONV_CFDNA_NONBLOOD_ALPHA`, band-edge constants for each regime, `DECONV_MIXTURES_FIG_DIR`; barplot parameters: `DECONV_BARPLOT_K`, `DECONV_BARPLOT_N_PLOTS`, `DECONV_BARPLOT_SEED`
-- `PLAN.md` — project-root planning log with dated entries for each significant planning round
 
 ### Changed
 - `run_deconvolution.py` — refactored into `_run_shared_setup()`, `_run_legacy_balanced()`, `_run_regimes()`. Added `--regimes` CLI flag (see Usage). No-flag behaviour is identical to before.

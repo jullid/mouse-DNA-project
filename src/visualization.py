@@ -6,17 +6,55 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import ListedColormap
 from pathlib import Path
 from scipy.cluster.hierarchy import linkage, dendrogram
 from scipy.spatial.distance import squareform
 
 
-# --- Colormap used in plots ---
+# --- Colormap used in plots (a few different versions available) ---
 blue_yellow = LinearSegmentedColormap.from_list(
     "blue_yellow",
     ["#0000FF", "#ffff00"]
 )
 
+purple_white = LinearSegmentedColormap.from_list(
+    "purple_white",
+    ["#3B0F70", "#FFFFFF"]
+)
+
+pink_white = LinearSegmentedColormap.from_list(
+    "pink_white",
+    ["#AF1F9E", "#FFFFFFC5"]
+)
+
+pink_white_2 = LinearSegmentedColormap.from_list(
+    "pink_white_2",
+    ["#79156D", "#FFFFFFC5"]
+)
+
+green_white = LinearSegmentedColormap.from_list(
+    "green_white",
+    ["#005400", "#FFFFFFC5"]
+)
+
+# custom Blues_r into red colormap with red in middle:
+# Left half: exact Blues_r colors
+blues_r = plt.get_cmap("Blues_r")
+blue_half = blues_r(np.linspace(0, 1, 128))
+
+# Right half: only the white -> red side of vlag
+vlag = sns.color_palette("vlag", as_cmap=True)
+red_half = vlag(np.linspace(0.5, 1, 128))
+
+# Optional: guarantee pure white at the midpoint
+blue_half[-1] = [1, 1, 1, 1]
+red_half[0] = [1, 1, 1, 1]
+
+blues_vlag = ListedColormap(
+    np.vstack([blue_half, red_half]),
+    name="blues_vlag"
+)
 
 # --------------------------- helper function----------------------------------------
 def _save_or_close(output_path=None, dpi=150):
@@ -86,7 +124,7 @@ def plot_heatmap(
 
     ax = sns.heatmap(
         heatmap_matrix,
-        cmap=blue_yellow,
+        cmap="Blues_r",
         vmin=0,
         vmax=1,
         xticklabels=False,
@@ -137,7 +175,7 @@ def plot_tissue_correlation(
     plt.figure(figsize=figsize)
     sns.heatmap(
         tissue_corr,
-        cmap="coolwarm",
+        cmap="vlag", #"coolwarm",
         vmin=0,
         vmax=1,
         square=True,
@@ -213,7 +251,7 @@ def plot_clustered_tissue_correlation(
     """
     g = sns.clustermap(
         tissue_corr,
-        cmap="coolwarm",
+        cmap=vlag, #blues_white_red, #"coolwarm",
         vmin=0,
         vmax=1,
         linewidths=0.5,
